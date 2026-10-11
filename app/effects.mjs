@@ -59,3 +59,14 @@ export function colorTable(c, channel) {
     return Math.round(Math.max(0, Math.min(1, (encoded - .5) * contrast + .5 + offset)) * 255);
   });
 }
+export function createColorTableCache(limit = 32) {
+  const cache = new Map();
+  return c => {
+    const key = JSON.stringify(['exposure','contrast','warmth'].map(k=>valueOf(c,k)));
+    if (cache.has(key)) return cache.get(key);
+    const tables = [0,1,2].map(channel=>colorTable(c,channel)), bytes = new Uint8Array(256*4);
+    for (let i=0;i<256;i++) { for(let ch=0;ch<3;ch++)bytes[i*4+ch]=tables[ch][i]; bytes[i*4+3]=255; }
+    if (cache.size >= limit) cache.delete(cache.keys().next().value);
+    cache.set(key,bytes);return bytes;
+  };
+}

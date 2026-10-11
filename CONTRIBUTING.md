@@ -17,7 +17,7 @@ Open http://127.0.0.1:4317 . For browser tests, optionally install `npm install 
 
 The AI browser tests use a local mock provider. Never use production API keys or upload private recordings in tests. Keep `.local/`, `.build/`, `tools/`, `runtime/`, `test-results/`, `.env` and credentials out of commits.
 
-For a portable build, run `scripts/setup-runtime.ps1`, `scripts/setup-ffmpeg.ps1`, `scripts/compact.ps1`, `node scripts/measure-size.mjs` and `scripts/package.ps1`. Setup downloads must be online; normal editing and export run offline. The size report includes all runtime components but not the system browser and fonts. Tool versions affect the resulting size.
+For a portable build, run `scripts/setup-runtime.ps1`, `scripts/setup-ffmpeg.ps1`, `scripts/compact.ps1`, `scripts/build-desktop.ps1`, `node scripts/measure-size.mjs` and `scripts/package.ps1`. Setup downloads must be online; normal editing and export run offline. The size report includes all runtime components but not shared .NET Framework, WebView2 Runtime, system browser and fonts. Tool versions affect the resulting size.
 
 ## Before opening a PR
 

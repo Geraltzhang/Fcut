@@ -1,10 +1,12 @@
 # FCUT
 
-**80.4 MB 的多轨剪辑器，你能在不删功能的前提下做得更小吗？**
+**100 MB 内的 Windows 多轨剪辑器：字幕、配乐、调色、关键帧与色键抠像。欢迎在保留功能的前提下挑战更小体积。**
 
-A small Windows video editor with local multitrack editing, subtitles, music and optional bring-your-own-model APIs. The reference portable build is approximately **80.4 MB unpacked, including Node + FFmpeg + FFprobe**. It reuses the system browser and fonts. This is an early prototype, not a complete CapCut replacement and not a verified world's-smallest claim.
+[![Tests](https://github.com/Geraltzhang/Fcut/actions/workflows/test.yml/badge.svg)](https://github.com/Geraltzhang/Fcut/actions/workflows/test.yml)
 
-**[参与体积挑战 / Size challenge](CHALLENGE.md) · [贡献指南](CONTRIBUTING.md) · [AI API](API.md) · [MIT License](LICENSE)**
+A small Windows video editor with local multitrack editing, subtitles, music and optional bring-your-own-model APIs. The reference portable build is approximately **81.5 MB unpacked, including the desktop shell, Node + FFmpeg + FFprobe**. It reuses Windows .NET Framework, WebView2 Runtime and system fonts; browser mode uses an installed browser. This is an early prototype, not a complete CapCut replacement and not a verified world's-smallest claim.
+
+**[验证状态](VALIDATION.md) · [桌面版说明](DESKTOP.md) · [参与体积挑战 / Size challenge](CHALLENGE.md) · [贡献指南](CONTRIBUTING.md) · [AI API](API.md) · [MIT License](LICENSE)**
 
 ### 从源码开始
 
@@ -17,11 +19,11 @@ powershell -NoProfile -File scripts/setup-ffmpeg.ps1
 node server.mjs
 ```
 
-打开 http://127.0.0.1:4317 。无需 `npm install`。Git 仓库只包含源码；便携运行时和媒体工具不提交到 Git。从源码组装便携版的方法见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+打开 http://127.0.0.1:4317 。无需 `npm install`。GitHub 当前仅发布源码，没有公开桌面二进制 Release；便携运行时和媒体工具不提交到 Git。从源码组装便携版的方法见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ### 体积计算口径
 
-参考便携版约 80.4 MB（约 76.7 MiB），媒体引擎约 56.8 MB，Node 运行时约 23.5 MB。用户素材、导出文件、测试产物和开发工具不计入软件本体；系统浏览器和字体为明确的共享依赖。使用 UPX 压缩现有可执行文件，没有通过移除编码器或现有功能来得到该数字。下载包大小和展开后的大小分别计算，压缩体积不代表运行内存。
+当前桌面便携版展开约 81.5 MB（约 77.7 MiB），媒体引擎约 56.8 MB，Node 运行时约 23.5 MB，桌面封装与 SDK 约 1 MB。以 [SIZE-REPORT.json](SIZE-REPORT.json) 和打包时生成的精确报告为准。用户素材、导出文件、测试产物和开发工具不计入软件本体；WebView2 Runtime、.NET Framework、系统字体（以及浏览器模式使用的浏览器）为明确的共享依赖。使用 UPX 压缩现有可执行文件，没有通过移除编码器或现有功能来得到该数字。下载包大小和展开后的大小分别计算，压缩体积不代表运行内存。
 
 欢迎提交更小的实现或 PR；请附上源码、构建步骤、依赖、测试和完整体积报告。详细规则见 [CHALLENGE.md](CHALLENGE.md)。
 
@@ -72,11 +74,13 @@ Windows 双击 `Start-Fcut.cmd`，或执行 `node server.mjs` 后访问 http://1
 2. 点击片段选中，右侧编辑属性。点击标尺移动播放头。
 3. 在播放头处分割，或拖动片段左右边缘裁切。相同轨道不允许片段重叠。
 4. 添加字幕或导入 SRT；添加配乐到音频轨道。
-5. 点击“导出视频”。输出保存在 `.local/exports/`，并可通过完成后的下载按钮另存。
+5. 点击“导出视频”。输出保存在数据目录的 `exports/`，并可通过完成后的下载按钮另存。
 
 快捷键：Space 播放/暂停，Ctrl+B 分割，Ctrl+D 复制，Delete 删除，Ctrl+Z 撤销，Ctrl+Shift+Z 重做，Ctrl+S 下载工程，左右方向键逐帧定位。
 
 ## 数据与当前边界
+
+浏览器模式默认数据目录为 `.local/`；桌面模式为 `%LOCALAPPDATA%\FCUT\data`。下文的 `.local` 路径针对浏览器模式；两个模式不会自动迁移素材库。
 
 - 仅监听 127.0.0.1，普通剪辑/导出在本机进行；主动使用 AI 时仅上传所选文字/音频。导入会**复制**文件到 `.local/media/`，请预留磁盘空间。拖动素材仅保存编辑指令，不反复复制源文件。
 - `.local/project.json` 为当前自动保存工程，`.fcut` 下载文件包含编辑信息和素材 ID，**不包含素材本身**；当前须在同一素材库打开，不支持素材重定位或工程打包。
@@ -88,6 +92,8 @@ Windows 双击 `Start-Fcut.cmd`，或执行 `node server.mjs` 后访问 http://1
 - 同时只支持一个导出任务；编辑时请仅使用一个工作台窗口。
 
 ## 验证
+
+完整检查记录和复现命令见 [VALIDATION.md](VALIDATION.md)。CI 同时检查压缩包与展开文件总量，任一超过 100,000,000 字节则失败。
 
 `node --test tests/*.test.mjs` 验证源时间映射、轨道约束、字幕解析和导出图。`node tests/integration.mjs` 会生成合成测试素材，在独立端口和临时数据目录执行真实导出，并检查媒体时长、音频和字幕像素。浏览器测试使用 Playwright；详见 `tests/browser.mjs`。
 

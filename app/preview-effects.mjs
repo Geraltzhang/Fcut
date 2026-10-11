@@ -1,4 +1,4 @@
-import { colorTable, valueOf, sample, opacityAt } from './effects.mjs';
+import { createColorTableCache, valueOf, sample, opacityAt } from './effects.mjs';
 
 // One WebGL context composites all video tracks; media elements keep decoding/audio.
 export function createPreview(canvas) {
@@ -33,6 +33,7 @@ export function createPreview(canvas) {
   gl.uniform1i(locations.source,0); gl.uniform1i(locations.lut,1);
   gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
   let lastLut = '';
+  const cachedTable = createColorTableCache();
   return (project, clips, elements, time) => {
     if (gl.isContextLost()) return;
     const ratio = Math.min(2, window.devicePixelRatio || 1);
@@ -54,8 +55,7 @@ export function createPreview(canvas) {
       const signature = JSON.stringify([c.exposure,c.contrast,c.warmth]);
       gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D,lut);
       if (signature !== lastLut) {
-        const tables = [0,1,2].map(ch=>colorTable(c,ch)), bytes = new Uint8Array(256*4);
-        for(let i=0;i<256;i++){bytes[i*4]=tables[0][i];bytes[i*4+1]=tables[1][i];bytes[i*4+2]=tables[2][i];bytes[i*4+3]=255;}
+        const bytes = cachedTable(c);
         gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,256,1,0,gl.RGBA,gl.UNSIGNED_BYTE,bytes); lastLut=signature;
       }
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,source);

@@ -26,6 +26,20 @@ jobs:
       - run: node tests/integration.mjs
       - run: node tests/effects-integration.mjs
       - run: node tests/desktop-server.mjs
+      - name: Install optional browser test dependency
+        run: npm install --no-save --package-lock=false playwright
+      - run: node tests/browser.mjs
+      - run: node tests/effects-browser.mjs
       - name: Compile Windows desktop shell
         shell: pwsh
         run: ./scripts/build-desktop.ps1
+      - name: Prepare compact portable runtime
+        shell: pwsh
+        run: |
+          ./scripts/setup-runtime.ps1
+          ./scripts/compact.ps1
+      - name: Enforce 100 MB desktop package budget
+        shell: pwsh
+        run: ./scripts/package.ps1
+      - name: Verify packed runtime and media engine
+        run: ./runtime/node.exe tests/integration.mjs

@@ -1,6 +1,6 @@
 # Can you make FCUT smaller without removing features?
 
-**Current reference: approximately 80.4 MB unpacked, including Node.js, FFmpeg and FFprobe. Goal: keep the same useful editing workflow and beat that size.**
+**Current reference: approximately 81.5 MB unpacked, including the desktop shell/SDK, Node.js, FFmpeg and FFprobe. Goal: keep the same useful editing workflow and beat that size.**
 
 This is an open engineering challenge, not a claim to be the world's smallest editor. It is a working early prototype, not a full replacement for CapCut. Smaller implementations and honest trade-offs are welcome.
 
@@ -8,7 +8,7 @@ This is an open engineering challenge, not a claim to be the world's smallest ed
 
 - Primary metric: total logical file bytes of the ready-to-run Windows x64 application, including its application-specific runtime and media engine. Use decimal MB (1 MB = 1,000,000 bytes), and also report MiB.
 - Count downloaded components needed for the baseline features, even if they download only on first use. Moving FFmpeg outside the application folder does not make it disappear from the comparison.
-- The baseline reuses the Windows browser and system fonts. Disclose all additional OS dependencies; a self-contained-browser build is a different comparison class.
+- The desktop baseline reuses Windows .NET Framework, Evergreen WebView2 Runtime and system fonts; browser mode reuses an installed browser. Disclose all additional OS dependencies; a self-contained-browser build is a different comparison class.
 - Report ZIP/download size separately from unpacked size. Do not compare one project's archive with another project's installed files.
 - Exclude user footage, exported movies, development tools, screenshots and test fixtures. Disclose every exclusion.
 - Cloud AI model weights are excluded because AI is an optional remote service. Local editing and exporting must still work offline. Do not replace local video export with an undisclosed cloud service.
@@ -17,13 +17,18 @@ This is an open engineering challenge, not a claim to be the world's smallest ed
 ## 不能删的功能 / Baseline behavior
 
 1. Local media import, metadata and thumbnails, including video, audio and still images.
-2. Two video tracks, two audio tracks and a subtitle track; overlays and audio mixing.
+2. Default two video tracks, two audio tracks and a subtitle track, expandable to 32 total; overlays and audio mixing.
 3. Drag, trim, split, duplicate, delete, snapping, timeline zoom, undo/redo and frame stepping.
 4. 0.25–4× speed, image scaling/position, horizontal/vertical/square canvas.
 5. Original audio and music volume, mute and fades.
 6. Chinese/manual subtitles and SRT import; editable text, size, color, position and background.
 7. Autosave, project save/reopen and local MP4 export with real rendered subtitles and mixed audio.
 8. Optional configurable model APIs for subtitle polish, translation and timestamped transcription; preview before applying and no API keys in saved projects.
+
+9. Non-destructive exposure/contrast/saturation/warmth, four-edge crop, linear position/scale/opacity keyframes, visual fades/dissolves and chroma key, in preview and export.
+10. A desktop shell with lifecycle/data/download behavior preserved; native verification must be reported separately. The current development machine blocks the unsigned native executable, so native validation is pending (see DESKTOP.md).
+
+The original browser-only reference was about 80.4 MB. Do not compare that older feature baseline with the current desktop build without disclosing the difference.
 
 Preserve the currently supported media formats. If changing the engine or codec build, list codecs/demuxers removed and show equivalent support for the existing import/export paths. A reduced-format experiment can still be submitted but will be listed separately.
 
@@ -43,8 +48,11 @@ For FCUT's current layout:
 ```powershell
 node --test tests/*.test.mjs
 node tests/integration.mjs
+node tests/effects-integration.mjs
+node tests/desktop-server.mjs
 # Optional: install Playwright and set BROWSER_PATH if Edge is not installed.
 node tests/browser.mjs
+node tests/effects-browser.mjs
 node scripts/measure-size.mjs
 ```
 

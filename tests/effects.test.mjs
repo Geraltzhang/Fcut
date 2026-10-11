@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { newProject, makeClip, splitClip, validateProject, addTrack, tracksOf } from '../app/model.mjs';
-import { sample, opacityAt, colorTable } from '../app/effects.mjs';
+import { sample, opacityAt, colorTable, createColorTableCache } from '../app/effects.mjs';
 const asset={id:'v',name:'test',kind:'video',duration:10};
 test('legacy projects retain tracks; added tracks persist and reject invalid configurations',()=>{
   const p=newProject(); delete p.tracks; assert.equal(tracksOf(p).length,5);
@@ -26,4 +26,11 @@ test('neutral grading is identity; exposure and fades use stable parameter meani
   assert.ok(colorTable({exposure:1},0)[100]>100);
   const c={duration:4,opacity:.8,visualFadeIn:1,visualFadeOut:1};
   assert.equal(opacityAt(c,.5),.4);assert.equal(opacityAt(c,2),.8);assert.equal(opacityAt(c,3.5),.4);
+});
+test('cached grading preserves pixels across alternating layers and remains bounded',()=>{
+  const get=createColorTableCache(2), neutral=get({}), warm=get({warmth:.5});
+  assert.equal(get({exposure:0,contrast:1,warmth:0}),neutral);
+  assert.equal(get({warmth:.5,saturation:0}),warm);
+  for(let i=0;i<256;i++)assert.equal(warm[i*4],colorTable({warmth:.5},0)[i]);
+  get({exposure:1});assert.notEqual(get({}),neutral);
 });

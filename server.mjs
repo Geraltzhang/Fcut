@@ -26,7 +26,13 @@ let aiBusy = false;
 const jobs = new Map();
 let activeJob = null;
 let writeQueue = Promise.resolve();
-async function readJson(file, fallback) { try { return JSON.parse(await fsp.readFile(path.join(data, file), 'utf8')); } catch { return fallback; } }
+async function readJson(file, fallback) {
+  try { return JSON.parse(await fsp.readFile(path.join(data, file), 'utf8')); }
+  catch (e) {
+    if (e.code === 'ENOENT') return fallback;
+    throw Error(`无法读取 ${file}，原文件已保留。请备份数据后修复文件：${e.message}`);
+  }
+}
 function persist(file, value) {
   const contents = JSON.stringify(value, null, 2);
   const task = writeQueue.then(async () => { const target = path.join(data, file); await fsp.writeFile(target + '.tmp', contents); await fsp.rename(target + '.tmp', target); });
@@ -122,7 +128,8 @@ async function startExport(p) {
 }
 async function transcribe(input, signal) {
   const c = input.clip;
-  validateProject({ ...newProject(), clips: [c] }, assets);
+  // An isolated transcription has no layer order; custom timeline track IDs remain valid.
+  validateProject({ ...newProject(), clips: [{ ...c, track: c?.kind === 'audio' ? 'a1' : 'v1' }] }, assets);
   const asset = assets.find(a => a.id === c.assetId);
   if (!asset?.hasAudio || !['video', 'audio'].includes(c.kind)) throw Error('请选择有声音的视频或音频片段');
   if (c.duration > 1800) throw Error('请先把片段分割为不超过 30 分钟，再识别字幕');

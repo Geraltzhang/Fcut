@@ -84,6 +84,11 @@ try {
   assert.ok((await page.locator('#ai-results').innerText()).includes('Translated: '));
   await page.locator('#ai-close').click();
   await page.locator('.clip.video').last().click();
+  await page.locator('#add-video-track').click();
+  const asrClip=await page.locator('.clip.selected').boundingBox(), customTrack=await page.locator('.track').nth(1).boundingBox();
+  await page.mouse.move(asrClip.x+20,asrClip.y+15);await page.mouse.down();
+  await page.mouse.move(asrClip.x+20,customTrack.y+20,{steps:6});await page.mouse.up();
+  assert.equal(await page.locator('.track').nth(1).locator('.clip.video').count(),1);
   await page.locator('#ai-assistant').click(); await page.locator('#ai-task').selectOption('transcribe');
   await page.locator('#ai-run').click(); await page.waitForSelector('#ai-apply:not([hidden])');
   assert.ok((await page.locator('#ai-results').innerText()).includes('2.10s'));
@@ -112,6 +117,16 @@ try {
   const viewer = await page.locator('.viewer').boundingBox(), timeline = await page.locator('.timeline-panel').boundingBox();
   assert.ok(viewer.y + viewer.height <= timeline.y + 1, 'preview must not overlap timeline');
   await page.screenshot({ path: path.join(results, 'compact.png') });
+  await page.route('**/api/desktop/status',route=>route.fulfill({json:{exporting:true}}));
+  page.once('dialog',dialog=>dialog.dismiss());
+  assert.equal(await page.evaluate(()=>window.fcutDesktopPrepareClose()),false);
+  await page.unroute('**/api/desktop/status');
+  await page.route('**/api/project',route=>route.fulfill({status:400,json:{error:'test save failure'}}));
+  assert.equal(await page.evaluate(()=>window.fcutDesktopPrepareClose()),false);
+  assert.equal(await page.evaluate(()=>document.body.inert),false);
+  await page.unroute('**/api/project');
+  assert.equal(await page.evaluate(()=>window.fcutDesktopPrepareClose()),true);
+  assert.equal((JSON.parse(await fs.readFile(path.join(dataDir,'project.json'),'utf8'))).clips.length,4);
   assert.deepEqual(errors, []);
-  console.log(JSON.stringify({ ok: true, browserErrors: errors, checks: ['import', 'split', 'cross-track-drag', 'trim', 'undo-redo', 'music', 'Chinese subtitles', 'ratio', 'play', 'AI polish', 'AI translation', 'AI transcription with real WAV', 'AI apply and undo', 'AI malformed output', 'AI cancellation', 'key not persisted', 'export', 'reload'], screenshots: results }, null, 2));
+  console.log(JSON.stringify({ ok: true, browserErrors: errors, checks: ['import', 'split', 'cross-track-drag', 'trim', 'undo-redo', 'music', 'Chinese subtitles', 'ratio', 'play', 'AI polish', 'AI translation', 'AI transcription on custom track with real WAV', 'AI apply and undo', 'AI malformed output', 'AI cancellation', 'key not persisted', 'export', 'reload', 'desktop close cancellation', 'save failure recovery', 'save on close'], screenshots: results }, null, 2));
 } finally { await browser.close(); child.kill(); mock.closeAllConnections(); mock.close(); }

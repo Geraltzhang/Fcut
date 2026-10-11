@@ -3,8 +3,6 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -68,7 +66,9 @@ sealed class Editor : Form {
             backend.Start(); job.Add(backend); backend.BeginOutputReadLine(); backend.BeginErrorReadLine();
             if(await Task.WhenAny(address.Task,Task.Delay(20000))!=address.Task) throw new Exception("本地服务启动超时。"+backendError);
             origin=await address.Task;
+            if(allowClose || IsDisposed)return;
             var env=await CoreWebView2Environment.CreateAsync(null,Path.Combine(profile,smoke?"test-webview":"webview"));
+            if(allowClose || IsDisposed)return;
             await web.EnsureCoreWebView2Async(env);
             web.CoreWebView2.Settings.AreDevToolsEnabled=false;
             web.CoreWebView2.Settings.IsStatusBarEnabled=false;
@@ -83,9 +83,14 @@ sealed class Editor : Form {
             };
             web.CoreWebView2.DownloadStarting += delegate(object s,CoreWebView2DownloadStartingEventArgs e) {
                 if(smoke){e.ResultFilePath=Path.Combine(data,"download.fcut");e.Handled=true;return;}
-                using(var save=new SaveFileDialog { FileName=Path.GetFileName(e.ResultFilePath),OverwritePrompt=true,Title="保存 FCUT 文件" }) {
-                    if(save.ShowDialog(this)!=DialogResult.OK)e.Cancel=true; else e.ResultFilePath=save.FileName;
-                }
+                // Modal UI must run after the WebView2 callback returns (no nested message loop).
+                var deferral=e.GetDeferral();
+                BeginInvoke((Action)(()=>{
+                    try { using(var save=new SaveFileDialog { FileName=Path.GetFileName(e.ResultFilePath),OverwritePrompt=true,Title="保存 FCUT 文件" }) {
+                        if(save.ShowDialog(this)!=DialogResult.OK)e.Cancel=true; else e.ResultFilePath=save.FileName;
+                    }} catch(Exception ex) { e.Cancel=true; MessageBox.Show(ex.Message,"无法保存文件"); }
+                    finally { deferral.Complete(); }
+                }));
             };
             web.CoreWebView2.ProcessFailed += delegate { status.Text="画面进程异常，请关闭并重新打开 FCUT。"; status.Visible=true;status.BringToFront(); };
             web.CoreWebView2.NavigationCompleted += async delegate(object s,CoreWebView2NavigationCompletedEventArgs e) {
@@ -98,6 +103,7 @@ sealed class Editor : Form {
             MessageBox.Show("需要 Microsoft Edge WebView2 Runtime。请从微软官网下载 Evergreen Runtime 后重新打开 FCUT。\nhttps://developer.microsoft.com/microsoft-edge/webview2/", "缺少 WebView2",MessageBoxButtons.OK,MessageBoxIcon.Information);
             allowClose=true; Close(); Environment.ExitCode=1;
         } catch(Exception e) {
+            if(IsDisposed)return;
             if(smoke) File.WriteAllText(Path.Combine(data,"desktop-error.txt"),e.ToString());
             else MessageBox.Show(e.Message,"FCUT 启动失败",MessageBoxButtons.OK,MessageBoxIcon.Error);
             allowClose=true;Close();Environment.ExitCode=1;
@@ -132,15 +138,16 @@ sealed class Editor : Form {
                 web.CoreWebView2.WebMessageReceived+=handler;
                 try {
                     await web.CoreWebView2.ExecuteScriptAsync("window.fcutDesktopPrepareClose().then(ok=>chrome.webview.postMessage(ok?'close-ok':'close-cancel')).catch(()=>chrome.webview.postMessage('close-cancel'))");
-                    if(await Task.WhenAny(saved.Task,Task.Delay(60000))!=saved.Task || !await saved.Task){closing=false;return;}
+                    if(await Task.WhenAny(saved.Task,Task.Delay(60000))!=saved.Task || !await saved.Task){await web.CoreWebView2.ExecuteScriptAsync("document.body.inert=false");closing=false;return;}
                 }finally{web.CoreWebView2.WebMessageReceived-=handler;}
             }
             if(backend!=null && !backend.HasExited){backend.StandardInput.WriteLine("shutdown");await Task.Run(()=>backend.WaitForExit(5000));}
         }catch(Exception ex){
-            if(!smoke && MessageBox.Show("保存未能确认："+ex.Message+"\n仍然关闭？","FCUT",MessageBoxButtons.YesNo,MessageBoxIcon.Warning)!=DialogResult.Yes){closing=false;return;}
+            if(!smoke && MessageBox.Show("保存未能确认："+ex.Message+"\n仍然关闭？","FCUT",MessageBoxButtons.YesNo,MessageBoxIcon.Warning)!=DialogResult.Yes){RestoreEditing();closing=false;return;}
         }
         allowClose=true;Close();
     }
+    async void RestoreEditing(){try{await web.CoreWebView2.ExecuteScriptAsync("document.body.inert=false");}catch{}}
     void Cleanup(){if(web!=null)web.Dispose();if(job!=null)job.Dispose();if(backend!=null)backend.Dispose();}
 }
 

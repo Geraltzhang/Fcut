@@ -26,3 +26,11 @@ for(const exitMode of ['shutdown','stdin-close']) {
   }finally{clearTimeout(timer);if(child.exitCode===null)child.kill();}
 }
 console.log('PASS: isolated ephemeral port, authenticated desktop status, persisted project, stdin shutdown and parent disconnect.');
+const corrupt=path.join(dir,'corrupt');await fs.mkdir(corrupt);
+await fs.writeFile(path.join(corrupt,'project.json'),'{broken project');
+const failed=spawn(process.execPath,['server.mjs'],{windowsHide:true,env:{...process.env,PORT:'0',FCUT_DATA_DIR:corrupt},stdio:['ignore','ignore','pipe']});
+let error='';failed.stderr.on('data',b=>error+=b);
+const code=await new Promise(resolve=>failed.on('exit',resolve));
+assert.notEqual(code,0);assert.ok(error.includes('project.json'));
+assert.equal(await fs.readFile(path.join(corrupt,'project.json'),'utf8'),'{broken project');
+console.log('PASS: corrupted project fails visibly without overwriting user data.');
