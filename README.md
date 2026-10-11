@@ -25,13 +25,13 @@ node server.mjs
 
 欢迎提交更小的实现或 PR；请附上源码、构建步骤、依赖、测试和完整体积报告。详细规则见 [CHALLENGE.md](CHALLENGE.md)。
 
-本地多轨剪辑工作台，第一阶段可运行原型。界面及应用服务零 npm 依赖，已附带独立 Node 运行时、FFmpeg 和 FFprobe，无需安装 Node。当前在系统浏览器中使用，尚未封装为 Tauri 桌面安装包。
+本地多轨剪辑工作台，第一阶段可运行原型。界面及应用服务零 npm 依赖。按贡献指南组装的便携版包含独立 Node 运行时、FFmpeg 和 FFprobe，无需另外安装 Node；源码仓库不附带这些二进制文件。当前在系统浏览器中使用，尚未封装为 Tauri 桌面安装包。
 
 ## 启动
 
 Windows 双击 `Start-Fcut.cmd`，或执行 `node server.mjs` 后访问 http://127.0.0.1:4317 。启动器会启动隐藏的本地服务，浏览器关闭后服务仍运行。命令行启动时可用 Ctrl+C 停止服务。
 
-当前工作目录已配置 `runtime/node.exe`、`tools/ffmpeg.exe` 和 `tools/ffprobe.exe`。启动器优先使用附带的运行时。软件本体目标 100 MB，完整运行组件采用 UPX 无损压缩，没有删除原有编码器、滤镜和编辑功能。详见 `SIZE-REPORT.json`。依赖 Windows 已安装的浏览器和系统字体；用户素材、导出视频、测试产物另计。磁盘压缩不会等比例降低运行内存，首次启动需解压到内存。
+组装便携版后，工作目录应包含 `runtime/node.exe`、`tools/ffmpeg.exe` 和 `tools/ffprobe.exe`。启动器优先使用附带的运行时。软件本体目标 100 MB，完整运行组件采用 UPX 无损压缩，没有删除原有编码器、滤镜和编辑功能。详见 `SIZE-REPORT.json`。依赖 Windows 已安装的浏览器和系统字体；用户素材、导出视频、测试产物另计。磁盘压缩不会等比例降低运行内存，首次启动需解压到内存。
 
 若仅从源码恢复媒体引擎，可运行 `scripts/setup-ffmpeg.ps1`，然后运行 `scripts/compact.ps1` 恢复紧凑体积；也可用 FFMPEG_PATH、FFPROBE_PATH 指定现有工具。许可证位于 `tools/FFmpeg-LICENSE.txt` 和 `runtime/LICENSE.txt`。`scripts/package.ps1` 只打包运行所需文件，超过 100 MB 会拒绝打包，不会打包素材、测试数据或 API 配置。
 
