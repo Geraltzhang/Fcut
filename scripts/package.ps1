@@ -6,7 +6,7 @@ if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'Invalid package version.' }
 if (-not $OutputPath) { $OutputPath = Join-Path $projectRoot "dist\FCUT-$version-desktop-win-x64.zip" }
 $parent = Split-Path -Parent ([IO.Path]::GetFullPath($OutputPath))
 New-Item -ItemType Directory -Force -Path $parent | Out-Null
-$allowlist = @('app','lib','runtime','tools','scripts','server.mjs','package.json','Start-Fcut.cmd','Start-Fcut.ps1','README.md','API.md','LICENSE','THIRD_PARTY_NOTICES.md','CHALLENGE.md','CONTRIBUTING.md','COMPOSITOR-NOTES.md','VALIDATION.md','SIZE-REPORT.json')
+$allowlist = @('app','lib','runtime','tools','scripts','server.mjs','package.json','Start-Fcut.cmd','Start-Fcut.ps1','README.md','README.en.md','API.md','LICENSE','THIRD_PARTY_NOTICES.md','CHALLENGE.md','CONTRIBUTING.md','COMPOSITOR-NOTES.md','VALIDATION.md','SIZE-REPORT.json')
 $allowlist += @('FCUT.exe','FCUT.exe.config','Microsoft.Web.WebView2.Core.dll','Microsoft.Web.WebView2.WinForms.dll','WebView2Loader.dll','WebView2-LICENSE.txt','WebView2-NOTICE.txt','DESKTOP.md','desktop')
 $paths = $allowlist | ForEach-Object { Join-Path $projectRoot $_ }
 foreach ($item in $paths) { if (-not (Test-Path -LiteralPath $item)) { throw "Missing package file: $item. Run scripts/build-desktop.ps1 first." } }

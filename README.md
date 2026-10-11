@@ -1,16 +1,20 @@
 # FCUT
 
-**100 MB 内的 Windows 多轨剪辑器：字幕、配乐、调色、关键帧与色键抠像。欢迎在保留功能的前提下挑战更小体积。**
+**简体中文** | [English](README.en.md)
+
+**100 MB 内的 Windows x64 多轨剪辑器：字幕、配乐、调色、关键帧与色键抠像。欢迎在保留功能的前提下挑战更小体积。**
 
 [![Tests](https://github.com/Geraltzhang/Fcut/actions/workflows/test.yml/badge.svg)](https://github.com/Geraltzhang/Fcut/actions/workflows/test.yml)
 
-A small Windows video editor with local multitrack editing, subtitles, music and optional bring-your-own-model APIs. The reference portable build is approximately **81.5 MB unpacked, including the desktop shell, Node + FFmpeg + FFprobe**. It reuses Windows .NET Framework, WebView2 Runtime and system fonts; browser mode uses an installed browser. This is an early prototype, not a complete CapCut replacement and not a verified world's-smallest claim.
+轻量 Windows 视频编辑器，支持本地多轨剪辑、字幕、配乐和可选的自备大模型 API。参考便携版展开约 **81.5 MB，包含桌面封装、Node、FFmpeg 和 FFprobe**，复用 Windows 的 .NET Framework、WebView2 Runtime 和系统字体；浏览器模式使用已安装的浏览器。目前仍是早期原型，尚不能完整替代剪映，也未声称经验证的“全球最小”。
 
 **[验证状态](VALIDATION.md) · [桌面版说明](DESKTOP.md) · [参与体积挑战 / Size challenge](CHALLENGE.md) · [贡献指南](CONTRIBUTING.md) · [AI API](API.md) · [MIT License](LICENSE)**
 
+语言链接仅切换 README；软件界面目前为中文，部分关联文档尚未提供双语版本。
+
 ### 从源码开始
 
-安装 Node.js 22+ 后，在 Windows PowerShell 中运行：
+安装 Node.js 22+ 后，在允许执行本项目脚本的 Windows PowerShell 环境中运行（首次下载媒体工具需要联网）：
 
 ```powershell
 git clone https://github.com/Geraltzhang/Fcut.git
@@ -64,7 +68,7 @@ Windows 双击 `Start-Fcut.cmd`，或执行 `node server.mjs` 后访问 http://1
 
 ## AI 使用
 
-点击顶部“AI 助手”，填写文字或语音服务的 API 基础地址、模型 ID 和 Key。字幕润色/翻译需要已有字幕；语音转字幕须先选中有声音的视频或音频片段。服务兼容 OpenAI Chat Completions / Audio Transcriptions 协议；语音模型必须支持分段时间戳，例如配置为 whisper-1 的兼容服务。Key 仅在当前服务进程内存中保存，重启后重新填写，不写入工程和磁盘。
+点击顶部“AI 助手”，填写文字或语音服务的 API 基础地址、模型 ID 和 Key。字幕润色/翻译需要已有字幕；语音转字幕须先选中有声音的视频或音频片段，单次片段不超过 30 分钟。服务兼容 OpenAI Chat Completions / Audio Transcriptions 协议；语音模型必须支持分段时间戳，例如配置为 whisper-1 的兼容服务。Key 仅在当前服务进程内存中保存，重启后重新填写，不写入工程和磁盘；API 基础地址和模型 ID 会保存到本地配置。
 
 点击“发送并生成”后，所选字幕文字或片段音频才发送到配置的服务，可能产生服务商费用。结果先预览，点击“应用到时间线”才修改工程。开发 API 和请求示例见 [API.md](API.md)。AI 接口不附带免费额度或模型服务。
 
@@ -72,7 +76,7 @@ Windows 双击 `Start-Fcut.cmd`，或执行 `node server.mjs` 后访问 http://1
 
 1. 导入媒体，点击素材上的 +，或拖入相应轨道。
 2. 点击片段选中，右侧编辑属性。点击标尺移动播放头。
-3. 在播放头处分割，或拖动片段左右边缘裁切。相同轨道不允许片段重叠。
+3. 在播放头处分割，或拖动片段左右边缘裁切。同一画面或音频轨道不允许片段重叠；字幕轨不受此限制。
 4. 添加字幕或导入 SRT；添加配乐到音频轨道。
 5. 点击“导出视频”。输出保存在数据目录的 `exports/`，并可通过完成后的下载按钮另存。
 
@@ -88,7 +92,7 @@ Windows 双击 `Start-Fcut.cmd`，或执行 `node server.mjs` 后访问 http://1
 - 预览基于浏览器媒体元素和主时钟，尚非专业逐帧同步引擎；复杂素材下可能有切换延迟。字幕预览使用浏览器文字排版，导出使用 FFmpeg，换行、字形及边距可能略有差异。
 - 音频预览包含增益与淡入淡出；导出额外使用限幅避免混音过载，峰值听感可能略有差别。
 - 尚未实现缓动关键帧、转场预设、曲线变速、曲线/LUT 文件导入、智能主体抠像、离线语音识别、音频波形分析及商业素材库。音频片段上的竖线是装饰，不是真实波形。
-- 导出当前使用 CPU H.264；不承诺 4K 多轨实时性能或极小内存占用。素材上限 10 GB/个，工程上限 500 个片段、6 小时。
+- 导出当前使用 CPU H.264；不承诺 4K 多轨实时性能或极小内存占用。素材上限 10 GiB/个（10,737,418,240 字节），工程上限 500 个片段、6 小时。
 - 同时只支持一个导出任务；编辑时请仅使用一个工作台窗口。
 
 ## 验证
@@ -103,3 +107,7 @@ Windows 双击 `Start-Fcut.cmd`，或执行 `node server.mjs` 后访问 http://1
 2. 轨道排序/删除、关键帧可视化与缓动、转场预设及曲线调色。
 3. 素材重定位、工程打包、桌面签名发行与安装器。
 4. 扩展离线语音识别、抠像和其他智能工具。
+
+## 许可证
+
+FCUT 自有源码采用 [MIT License](LICENSE)。Node、FFmpeg 和 WebView2 等组件分别遵循各自许可证；对外分发便携二进制包前需满足对应组件的许可与源码提供要求，详见 [第三方说明](THIRD_PARTY_NOTICES.md)。
