@@ -17,3 +17,7 @@ The application reuses Windows-installed browser and fonts. These are not distri
 ## Architecture reference
 
 Compositor by Wonder Assembly LLC (MIT, copyright 2026) informed the non-destructive adjustment and mask-processing design. FCUT's new effects are implemented independently for JavaScript/WebGL/FFmpeg. See [COMPOSITOR-NOTES.md](COMPOSITOR-NOTES.md) for the pinned source references and differences. No Apple frameworks, Compositor binaries or model weights are distributed with FCUT.
+
+## Windows desktop components
+
+The optional native desktop shell uses Microsoft.Web.WebView2 SDK 1.0.4258.31, downloaded from Microsoft’s NuGet package. Built desktop packages include its LICENSE.txt and NOTICE.txt as WebView2-LICENSE.txt and WebView2-NOTICE.txt. This component is governed by Microsoft’s own terms, not FCUT’s MIT license. The Evergreen WebView2 Runtime and .NET Framework are shared system prerequisites, not redistributed in this package. See DESKTOP.md.

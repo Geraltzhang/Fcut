@@ -9,6 +9,7 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;'
 let project = newProject(), assets = [], selected = null, tab = 'media', time = 0, playing = false, px = 55, snap = true;
 let history = [], future = [], saveTimer, toastTimer, jobId, dragState, audioContext;
 let saveQueue = Promise.resolve(), saveRevision = 0, clockStart = 0, clockTime = 0;
+let initialStateLoaded = false;
 const elements = new Map();
 const effectCanvas = document.createElement('canvas'); effectCanvas.id = 'effect-preview'; $('#visual-layers').append(effectCanvas);
 let paintPreview; try { paintPreview = createPreview(effectCanvas); } catch (e) { setTimeout(()=>toast(e.message),0); }
@@ -28,6 +29,20 @@ function queueSave() {
     }).catch(e => { $('#save-state').textContent = '保存失败'; toast(e.message); });
   }, 450);
 }
+// The native host waits for this promise before stopping its owned backend.
+window.fcutDesktopPrepareClose = async () => {
+  pause();
+  if (!initialStateLoaded) return confirm('工程尚未加载完成。现在关闭窗口？现有工程不会被替换。');
+  try {
+    const state = await api('/api/desktop/status');
+    if (state.exporting && !confirm('正在导出视频。关闭 FCUT 将取消导出，是否继续？')) return false;
+    document.body.inert = true;
+    clearTimeout(saveTimer);
+    await saveQueue.catch(() => {});
+    await api('/api/project', { method: 'PUT', body: JSON.stringify(project) });
+    return true;
+  } catch (e) { document.body.inert = false; toast('保存失败，窗口保持打开：' + e.message); return false; }
+};
 function commit(fn) {
   pause(); const before = structuredClone(project);
   try { fn(); validateProject(project, assets); }
@@ -327,6 +342,7 @@ mountAI({ api, getProject: () => project, getSelected: selection, pause, notify:
 }) });
 try {
   const state = await api('/api/state'); project = state.project; assets = state.assets;
+  initialStateLoaded = true;
   if (!state.engine) toast('媒体引擎未安装，运行 scripts/setup-ffmpeg.ps1 后重启');
   $('#save-state').textContent = '已恢复本地工程'; render();
 } catch (e) { render(); toast('加载失败：' + e.message); }

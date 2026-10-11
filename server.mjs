@@ -148,9 +148,10 @@ async function transcribe(input, signal) {
 }
 const server = http.createServer(async (req, res) => {
   res.setHeader('X-Content-Type-Options', 'nosniff'); res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
-  const allowedHosts = [`127.0.0.1:${port}`, `localhost:${port}`];
+  const boundPort = server.address().port;
+  const allowedHosts = [`127.0.0.1:${boundPort}`, `localhost:${boundPort}`];
   if (!allowedHosts.includes(req.headers.host)) return json(res, 403, { error: 'Host rejected' });
-  const url = new URL(req.url, `http://127.0.0.1:${port}`);
+  const url = new URL(req.url, `http://127.0.0.1:${boundPort}`);
   try {
     if (url.pathname.startsWith('/api/')) {
       if (req.headers['x-fcut-token'] !== token) return json(res, 403, { error: '请刷新编辑器' });
@@ -168,6 +169,7 @@ const server = http.createServer(async (req, res) => {
         finally { aiBusy = false; }
       }
       if (url.pathname === '/api/state' && req.method === 'GET') return json(res, 200, { project, assets: assets.map(publicAsset), engine: fs.existsSync(ffmpeg) && fs.existsSync(ffprobe) });
+      if (url.pathname === '/api/desktop/status' && req.method === 'GET') return json(res, 200, { exporting: activeJob !== null });
       if (url.pathname === '/api/assets' && req.method === 'POST') return json(res, 201, await importMedia(req, url));
       if (url.pathname === '/api/project' && req.method === 'PUT') { const p = await body(req); validateProject(p, assets); await persist('project.json', p); project = p; return json(res, 200, { saved: true }); }
       if (url.pathname === '/api/export' && req.method === 'POST') return json(res, 202, await startExport(await body(req)));
@@ -198,6 +200,17 @@ const server = http.createServer(async (req, res) => {
     return json(res, 404, { error: 'Not found' });
   } catch (e) { if (!res.headersSent && !res.destroyed) json(res, 400, { error: e.message }); }
 });
-server.listen(port, '127.0.0.1', () => console.log(`FCUT ready http://127.0.0.1:${port}`));
+server.listen(port, '127.0.0.1', () => console.log(`FCUT ready http://127.0.0.1:${server.address().port}`));
 server.on('error', e => { console.error(e.message); process.exitCode = 1; });
 for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => { for (const j of jobs.values()) j.child?.kill(); server.close(); });
+if (process.env.FCUT_DESKTOP === '1') {
+  let stopping = false, input = '';
+  const shutdown = async () => {
+    if (stopping) return; stopping = true;
+    for (const j of jobs.values()) j.child?.kill();
+    server.close(); await writeQueue; process.exit(0);
+  };
+  process.stdin.setEncoding('utf8');
+  process.stdin.on('data', chunk => { input += chunk; if (input.includes('shutdown\n') || input.includes('shutdown\r\n')) shutdown(); input = input.slice(-32); });
+  process.stdin.on('end', shutdown);
+}

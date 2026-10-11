@@ -25,3 +25,7 @@ jobs:
         run: ./scripts/setup-ffmpeg.ps1
       - run: node tests/integration.mjs
       - run: node tests/effects-integration.mjs
+      - run: node tests/desktop-server.mjs
+      - name: Compile Windows desktop shell
+        shell: pwsh
+        run: ./scripts/build-desktop.ps1

@@ -1,22 +1,23 @@
 {
-  "measuredAt": "2026-10-11T18:41:02.372Z",
+  "measuredAt": "2026-10-11T18:48:59.701Z",
   "budgetBytes": 100000000,
-  "totalBytes": 80436860,
-  "MB": 80.44,
-  "MiB": 76.71,
+  "totalBytes": 81448154,
+  "MB": 81.45,
+  "MiB": 77.68,
   "groups": {
-    "app": 81969,
+    "app": 82806,
     "lib": 13776,
     "runtime": 23504622,
     "tools": 56784308,
-    "scripts": 6694,
-    "other": 45491
+    "scripts": 10868,
+    "desktop": 1004323,
+    "other": 47451
   },
   "originalMediaEngineBytes": 210644992,
   "originalNodeBytes": 92825416,
   "notes": [
-    "Includes Node runtime, FFmpeg and FFprobe, application code and licenses.",
-    "Does not bundle a browser or system fonts; uses those installed on Windows.",
+    "Includes desktop shell/SDK when built, Node runtime, FFmpeg and FFprobe, application code and licenses.",
+    "Does not bundle WebView2 Runtime, .NET Framework, a browser or system fonts; uses shared Windows dependencies.",
     "User media, exports, development tools, test artifacts and this small report are excluded.",
     "UPX lossless executable packing preserves existing codecs and filters; disk savings do not imply lower RAM use."
   ]

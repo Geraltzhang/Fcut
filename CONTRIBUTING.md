@@ -30,3 +30,5 @@ For a portable build, run `scripts/setup-runtime.ps1`, `scripts/setup-ffmpeg.ps1
 Your contributions are made under this repository's MIT license. Third-party components retain their own licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 New visual effects: also run `node tests/effects-integration.mjs` and, with Playwright, `node tests/effects-browser.mjs`. Generate media fixtures with the integration scripts first. See [COMPOSITOR-NOTES.md](COMPOSITOR-NOTES.md).
+
+Desktop builds: run `scripts/build-desktop.ps1` before `scripts/package.ps1`. Native lifecycle verification uses `scripts/test-desktop.ps1` and requires a policy that permits launching the unsigned development build; see [DESKTOP.md](DESKTOP.md).

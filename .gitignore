@@ -15,3 +15,6 @@ dist/
 *.zip
 *.exe
 *.dll
+/FCUT.exe.config
+/WebView2-LICENSE.txt
+/WebView2-NOTICE.txt
