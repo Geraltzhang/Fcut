@@ -28,3 +28,5 @@ For a portable build, run `scripts/setup-runtime.ps1`, `scripts/setup-ffmpeg.ps1
 - Avoid adding npm runtime dependencies for work supported by Node's built-in APIs.
 
 Your contributions are made under this repository's MIT license. Third-party components retain their own licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+New visual effects: also run `node tests/effects-integration.mjs` and, with Playwright, `node tests/effects-browser.mjs`. Generate media fixtures with the integration scripts first. See [COMPOSITOR-NOTES.md](COMPOSITOR-NOTES.md).

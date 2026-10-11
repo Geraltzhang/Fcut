@@ -193,7 +193,7 @@ const server = http.createServer(async (req, res) => {
       const html = (await fsp.readFile(path.join(root, 'app', 'index.html'), 'utf8')).replace('__TOKEN__', token);
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; frame-ancestors 'none'" }); return res.end(html);
     }
-    const files = { '/app.mjs': 'text/javascript', '/ai-ui.mjs': 'text/javascript', '/model.mjs': 'text/javascript', '/style.css': 'text/css' };
+    const files = { '/effects.mjs': 'text/javascript', '/effects-ui.mjs': 'text/javascript', '/preview-effects.mjs': 'text/javascript', '/app.mjs': 'text/javascript', '/ai-ui.mjs': 'text/javascript', '/model.mjs': 'text/javascript', '/style.css': 'text/css' };
     if (files[url.pathname]) return await serveFile(req, res, path.join(root, 'app', url.pathname.slice(1)), files[url.pathname]);
     return json(res, 404, { error: 'Not found' });
   } catch (e) { if (!res.headersSent && !res.destroyed) json(res, 400, { error: e.message }); }

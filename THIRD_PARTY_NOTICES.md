@@ -13,3 +13,7 @@ The MIT license in this repository covers FCUT's own source code. Separately dow
 This source repository does not include FFmpeg, Node, UPX executables, a web browser, fonts, user media, or API credentials. Setup scripts download tools from their upstream sources. The reference portable build uses Node 24.19.0, Gyan FFmpeg 9.0.2 essentials and UPX 5.2.0. The FFmpeg reference configuration includes GPL-enabled components. Retain the applicable third-party notices and satisfy corresponding source obligations when independently distributing binaries; the MIT source release is not a blanket license for every downloaded component.
 
 The application reuses Windows-installed browser and fonts. These are not distributed by this repository. No Compositor source code is included.
+
+## Architecture reference
+
+Compositor by Wonder Assembly LLC (MIT, copyright 2026) informed the non-destructive adjustment and mask-processing design. FCUT's new effects are implemented independently for JavaScript/WebGL/FFmpeg. See [COMPOSITOR-NOTES.md](COMPOSITOR-NOTES.md) for the pinned source references and differences. No Apple frameworks, Compositor binaries or model weights are distributed with FCUT.

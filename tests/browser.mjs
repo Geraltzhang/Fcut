@@ -69,6 +69,7 @@ try {
   await page.mouse.click(ruler2.x + 130, ruler2.y + 12);
   await page.waitForSelector('.subtitle');
   assert.ok(await page.evaluate(() => Number(getComputedStyle(document.querySelector('#subtitle-layers')).zIndex) > Number(getComputedStyle(document.querySelector('#visual-layers')).zIndex)), 'subtitles must render above video');
+  await page.waitForFunction(()=>{const c=document.querySelector('#effect-preview'),g=c.getContext('webgl'),b=new Uint8Array(4);g.readPixels(c.width/2,c.height/2,1,1,g.RGBA,g.UNSIGNED_BYTE,b);return b[2]>b[0]+30;});
   await page.screenshot({ path: path.join(results, 'editing.png') });
   await page.locator('#ai-assistant').click();
   await page.waitForFunction(() => document.querySelector('#ai-text-url').value.length > 0);

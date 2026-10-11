@@ -1,5 +1,8 @@
-import { TRACKS, uid, newProject, makeClip, makeText, durationOf, endOf, splitClip, validateProject, parseSrt } from './model.mjs';
+import { TRACKS, tracksOf, addTrack, uid, newProject, makeClip, makeText, durationOf, endOf, splitClip, validateProject, parseSrt } from './model.mjs';
 import { mountAI } from './ai-ui.mjs';
+import { effectFields, bindEffectActions } from './effects-ui.mjs';
+import { sliceAnimation } from './effects.mjs';
+import { createPreview } from './preview-effects.mjs';
 const $ = s => document.querySelector(s);
 const token = $('meta[name=fcut-token]').content;
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -7,6 +10,8 @@ let project = newProject(), assets = [], selected = null, tab = 'media', time = 
 let history = [], future = [], saveTimer, toastTimer, jobId, dragState, audioContext;
 let saveQueue = Promise.resolve(), saveRevision = 0, clockStart = 0, clockTime = 0;
 const elements = new Map();
+const effectCanvas = document.createElement('canvas'); effectCanvas.id = 'effect-preview'; $('#visual-layers').append(effectCanvas);
+let paintPreview; try { paintPreview = createPreview(effectCanvas); } catch (e) { setTimeout(()=>toast(e.message),0); }
 const format = t => { const f = Math.floor(Math.max(0, t) * 100 + .001); return `${String(Math.floor(f / 360000)).padStart(2, '0')}:${String(Math.floor(f / 6000) % 60).padStart(2, '0')}:${String(Math.floor(f / 100) % 60).padStart(2, '0')}.${String(f % 100).padStart(2, '0')}`; };
 const short = t => `${Math.floor(t / 60).toString().padStart(2, '0')}:${Math.floor(t % 60).toString().padStart(2, '0')}`;
 function toast(message) { $('#toast').textContent = message; $('#toast').classList.add('visible'); clearTimeout(toastTimer); toastTimer = setTimeout(() => $('#toast').classList.remove('visible'), 4200); }
@@ -86,7 +91,11 @@ function renderTimeline() {
   $('#timeline-content').style.width = `${width}px`;
   const step = px < 25 ? 5 : px < 70 ? 2 : 1;
   $('#ruler').innerHTML = Array.from({ length: Math.ceil(width / px / step) }, (_, i) => `<span class="tick" style="left:${i * step * px}px">${short(i * step)}</span>`).join('');
-  $('#tracks').innerHTML = TRACKS.map(t => `<div class="track" data-track="${t.id}" style="background-size:${px * step}px 100%">${project.clips.filter(c => c.track === t.id).map(c => {
+  const tracks = tracksOf(project);
+  $('.track-labels').innerHTML = '<div class="ruler-label">时间线</div>' + tracks.map(t=>`<div class="track-label ${t.kind}"><span>${t.kind==='audio'?'♫':t.kind==='text'?'T':'▧'}</span><div>${esc(t.name)}<small>${t.kind==='video'?'上层覆盖下层':'轨道'}</small></div></div>`).join('');
+  $('#timeline-content').style.height = (27 + tracks.length * (innerHeight >= 950 ? 55 : 47)) + 'px';
+  $('.track-labels').scrollTop = $('#timeline-scroll').scrollTop;
+  $('#tracks').innerHTML = tracks.map(t => `<div class="track" data-track="${t.id}" style="background-size:${px * step}px 100%">${project.clips.filter(c => c.track === t.id).map(c => {
     const a = assets.find(a => a.id === c.assetId);
     return `<div class="clip ${c.kind} ${selected === c.id ? 'selected' : ''}" data-clip="${c.id}" style="left:${c.start * px}px;width:${Math.max(4, c.duration * px)}px" title="${esc(c.text || c.name || '')} · ${format(c.start)}"><span class="trim-handle left" data-trim="left"></span>${a?.thumbnail ? `<img src="${a.thumbnail}" alt="">` : ''}<span class="clip-label">${esc(c.kind === 'audio' ? '♫ ' + c.name : c.text || c.name || '')}</span><span class="trim-handle right" data-trim="right"></span></div>`;
   }).join('')}${!project.clips.some(c => c.track === t.id) ? `<span class="track-hint">${t.id === 'v1' ? '拖入视频或图片，开始剪辑' : t.id === 'a1' ? '拖入音乐，为画面加入节奏' : ''}</span>` : ''}</div>`).join('');
@@ -128,7 +137,7 @@ window.addEventListener('pointermove', e => {
   } else {
     c.start = snapTime(o.start + delta, c.id, c.duration);
     const target = document.elementFromPoint(e.clientX, e.clientY)?.closest('.track');
-    const t = TRACKS.find(t => t.id === target?.dataset.track);
+    const t = tracksOf(project).find(t => t.id === target?.dataset.track);
     if (t && t.kind === (c.kind === 'image' ? 'video' : c.kind)) c.track = t.id;
   }
   if (c.kind !== 'text') { c.fadeIn = Math.min(c.fadeIn, c.duration); c.fadeOut = Math.min(c.fadeOut, c.duration); }
@@ -139,7 +148,7 @@ window.addEventListener('pointermove', e => {
 window.addEventListener('pointerup', () => {
   if (!dragState) return; const d = dragState; dragState = null;
   if (d.moved) {
-    try { validateProject(project, assets); history.push(d.before); future = []; queueSave(); }
+    try { const c=selection(); if(d.trim && c.kind!=='text'){ c.keyframes=sliceAnimation(d.original,c.start-d.original.start,c.duration); c.visualFadeIn=Math.min(c.visualFadeIn||0,c.duration); c.visualFadeOut=Math.min(c.visualFadeOut||0,c.duration); } validateProject(project, assets); history.push(d.before); future = []; queueSave(); }
     catch (e) { project = d.before; toast(e.message); }
   }
   render();
@@ -164,13 +173,15 @@ function renderInspector() {
     if (c.kind !== 'audio') html += `<section class="property-section"><h3>画面变换</h3>${field('缩放 / %', 'scalePercent', c.scale * 100, 10, 300, 1)}${field('水平偏移 / %', 'xPercent', c.x * 100, -100, 100, 1)}${field('垂直偏移 / %', 'yPercent', c.y * 100, -100, 100, 1)}</section>`;
     if (assets.find(a => a.id === c.assetId)?.hasAudio) html += `<section class="property-section"><h3>音频</h3>${field('音量 / %', 'volumePercent', c.volume * 100, 0, 200, 1)}${field('淡入 / 秒', 'fadeIn', c.fadeIn, 0, c.duration)}${field('淡出 / 秒', 'fadeOut', c.fadeOut, 0, c.duration)}<p>音量设为 0 可静音原声。</p></section>`;
   }
+  if(c.kind==='video'||c.kind==='image') html += effectFields(c,field,time-c.start);
   body.innerHTML = html;
+  if(c.kind==='video'||c.kind==='image') bindEffectActions(body,selection,time-c.start,commit);
   body.querySelectorAll('[data-prop]').forEach(input => input.onchange = () => {
     const key = input.dataset.prop;
     commit(() => {
-      const c = selection(); let value = input.type === 'checkbox' ? input.checked : ['text', 'color'].includes(key) ? input.value : Number(input.value);
+      const c = selection(); let value = input.type === 'checkbox' ? input.checked : ['text', 'color', 'keyColor'].includes(key) ? input.value : Number(input.value);
       if (key.endsWith('Percent')) { c[key.replace('Percent', '')] = value / 100; }
-      else if (key === 'speed') { c.duration = c.duration * c.speed / value; c.speed = value; c.fadeIn = Math.min(c.fadeIn, c.duration); c.fadeOut = Math.min(c.fadeOut, c.duration); }
+      else if (key === 'speed') { const factor=c.speed/value; for(const points of Object.values(c.keyframes||{}))for(const point of points)point.time*=factor; c.visualFadeIn=(c.visualFadeIn||0)*factor; c.visualFadeOut=(c.visualFadeOut||0)*factor; c.duration = c.duration * c.speed / value; c.speed = value; c.fadeIn = Math.min(c.fadeIn, c.duration); c.fadeOut = Math.min(c.fadeOut, c.duration); }
       else c[key] = value;
     });
   });
@@ -197,9 +208,10 @@ function syncPreview(force = false) {
       const el = document.createElement(c.kind === 'image' ? 'img' : c.kind === 'audio' ? 'audio' : 'video');
       el.src = `/media/${c.assetId}`; el.className = 'preview-media'; el.preload = 'auto'; el.playsInline = true;
       el.addEventListener('error', () => { if (!record.failed) { record.failed = true; toast('该素材无法直接预览，请转换为 H.264 MP4 / AAC 后导入；仍可尝试 FFmpeg 导出。'); } });
+      el.addEventListener('loadeddata',()=>syncPreview()); el.addEventListener('load',()=>syncPreview()); el.addEventListener('seeked',()=>syncPreview());
       $('#visual-layers').append(el); record = { el, failed: false }; elements.set(c.id, record);
     }
-    const el = record.el; el.style.display = c.kind === 'audio' ? 'none' : 'block';
+    const el = record.el; el.style.display = 'none';
     el.style.zIndex = c.track === 'v2' ? '2' : '1';
     el.style.width = c.scale * 100 + '%'; el.style.height = c.scale * 100 + '%';
     el.style.left = ((1 - c.scale) / 2 + c.x) * 100 + '%'; el.style.top = ((1 - c.scale) / 2 + c.y) * 100 + '%';
@@ -213,6 +225,8 @@ function syncPreview(force = false) {
       if (playing && el.paused && !record.failed) el.play().catch(() => {}); else if (!playing && !el.paused) el.pause();
     }
   }
+  const tracks=tracksOf(project);
+  paintPreview?.(project,active.filter(c=>c.kind!=='audio').sort((a,b)=>tracks.findIndex(t=>t.id===b.track)-tracks.findIndex(t=>t.id===a.track)),elements,time);
   const textClips = project.clips.filter(c => c.kind === 'text' && time >= c.start && time < endOf(c));
   const factor = $('#preview').clientWidth / project.width;
   const html = textClips.map(c => `<div class="subtitle" style="top:${c.y * 100}%;font-size:${c.fontSize * factor}px;color:${c.color};${c.background ? `background:#0009;padding:${12 * factor}px` : ''}">${esc(c.text)}</div>`).join('');
@@ -221,9 +235,9 @@ function syncPreview(force = false) {
 }
 function updatePlayhead() { $('#current-time').textContent = format(time); $('#playhead').style.left = time * px + 'px'; }
 function pause() { playing = false; $('#play').textContent = '▶'; $('#play').setAttribute('aria-label', '播放'); for (const r of elements.values()) r.el.pause?.(); }
-function seek(t) { pause(); time = Math.max(0, Math.min(durationOf(project), t)); syncPreview(true); updatePlayhead(); }
+function seek(t) { pause(); time = Math.max(0, Math.min(durationOf(project), t)); syncPreview(true); updatePlayhead(); renderInspector(); }
 async function togglePlay() {
-  if (playing) { pause(); return; } if (!project.clips.length) return;
+  if (playing) { pause(); renderInspector(); return; } if (!project.clips.length) return;
   if (time >= durationOf(project) - .02) time = 0;
   audioContext ||= new AudioContext(); await audioContext.resume();
   playing = true; clockStart = performance.now(); clockTime = time; $('#play').textContent = 'Ⅱ'; $('#play').setAttribute('aria-label', '暂停'); syncPreview(true);
@@ -239,7 +253,7 @@ function frame(now) {
 requestAnimationFrame(frame);
 function split() { const c = selection(); if (!c) return; const pair = splitClip(c, time); if (!pair) return toast('请把播放头移到片段中间'); commit(() => { project.clips.splice(project.clips.indexOf(c), 1, ...pair); selected = pair[1].id; }); }
 function remove() { if (!selection()) return; commit(() => { project.clips = project.clips.filter(c => c.id !== selected); selected = null; }); }
-function duplicate() { const c = selection(); if (!c) return; const copy = { ...c, id: uid(), start: trackEnd(c.track) }; selected = copy.id; commit(() => project.clips.push(copy)); }
+function duplicate() { const c = selection(); if (!c) return; const copy = { ...structuredClone(c), id: uid(), start: trackEnd(c.track) }; selected = copy.id; commit(() => project.clips.push(copy)); }
 function zoom(value) { px = Math.max(12, Math.min(160, value)); $('#zoom').value = px; renderTimeline(); updatePlayhead(); }
 function download(data, name, type = 'application/json') { const url = URL.createObjectURL(new Blob([data], { type })); const a = document.createElement('a'); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
 $('#import').onclick = () => (tab === 'text' ? $('#srt-input') : $('#media-input')).click();
@@ -253,6 +267,9 @@ document.querySelectorAll('.nav').forEach(b => b.onclick = () => { tab = b.datas
 $('#project-name').onchange = e => commit(() => project.name = e.target.value.trim() || '未命名作品');
 $('#ratio').onchange = e => commit(() => [project.width, project.height] = e.target.value.split(',').map(Number));
 $('#undo').onclick = undo; $('#redo').onclick = redo; $('#split').onclick = split; $('#delete').onclick = remove; $('#duplicate').onclick = duplicate;
+$('#add-video-track').onclick=()=>commit(()=>addTrack(project,'video'));
+$('#add-audio-track').onclick=()=>commit(()=>addTrack(project,'audio'));
+$('#timeline-scroll').addEventListener('scroll',()=>$('.track-labels').scrollTop=$('#timeline-scroll').scrollTop);
 $('#add-text').onclick = addText; $('#play').onclick = togglePlay;
 $('#start').onclick = () => seek(0); $('#end').onclick = () => seek(Math.max(0, durationOf(project) - 1 / project.fps));
 $('#back-frame').onclick = () => seek(time - 1 / project.fps); $('#next-frame').onclick = () => seek(time + 1 / project.fps);

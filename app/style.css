@@ -28,3 +28,5 @@
 .ai-result small { color: #83b99f; font-size: 9px; }
 .ai-result p { margin: 4px 0; white-space: pre-wrap; }
 .ai-result .ai-original { color: #79847e; font-size: 10px; }
+
+#effect-preview{position:absolute;inset:0;width:100%;height:100%}.track-labels{overflow:hidden}.timeline-toolbar{overflow-x:auto}.tool-group{flex-shrink:0}

@@ -1,16 +1,16 @@
 {
-  "measuredAt": "2026-10-11T18:23:05.176Z",
+  "measuredAt": "2026-10-11T18:41:02.372Z",
   "budgetBytes": 100000000,
-  "totalBytes": 80409936,
-  "MB": 80.41,
-  "MiB": 76.68,
+  "totalBytes": 80436860,
+  "MB": 80.44,
+  "MiB": 76.71,
   "groups": {
-    "app": 65735,
-    "lib": 10656,
+    "app": 81969,
+    "lib": 13776,
     "runtime": 23504622,
     "tools": 56784308,
-    "scripts": 6627,
-    "other": 37988
+    "scripts": 6694,
+    "other": 45491
   },
   "originalMediaEngineBytes": 210644992,
   "originalNodeBytes": 92825416,
