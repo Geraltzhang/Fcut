@@ -1,0 +1,23 @@
+{
+  "measuredAt": "2026-10-11T18:23:05.176Z",
+  "budgetBytes": 100000000,
+  "totalBytes": 80409936,
+  "MB": 80.41,
+  "MiB": 76.68,
+  "groups": {
+    "app": 65735,
+    "lib": 10656,
+    "runtime": 23504622,
+    "tools": 56784308,
+    "scripts": 6627,
+    "other": 37988
+  },
+  "originalMediaEngineBytes": 210644992,
+  "originalNodeBytes": 92825416,
+  "notes": [
+    "Includes Node runtime, FFmpeg and FFprobe, application code and licenses.",
+    "Does not bundle a browser or system fonts; uses those installed on Windows.",
+    "User media, exports, development tools, test artifacts and this small report are excluded.",
+    "UPX lossless executable packing preserves existing codecs and filters; disk savings do not imply lower RAM use."
+  ]
+}

@@ -1,0 +1,17 @@
+.local/
+tools/
+test-results/
+node_modules/
+*.log
+.build/
+runtime/
+dist/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.zip
+*.exe
+*.dll
